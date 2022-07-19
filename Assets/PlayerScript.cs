@@ -1,11 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Numerics;
 using UnityEngine;
-using Vector2 = UnityEngine.Vector2;
 
 public class PlayerScript : MonoBehaviour
 {
+    public Camera camera;
+    public Transform cameraTransform;
+    public Vector3 offset;
+    public float smoothSpeed = 0.1f;
+    
+    
     private Animator _mainAnim;
     private Animator _leftArmAnim;
     private Animator _rightArmAnim;
@@ -17,6 +19,10 @@ public class PlayerScript : MonoBehaviour
     private float playerXSpd = 5.0f;
     private float playerYSpd = 2.5f;
     private Vector2 playerVel = Vector2.zero;
+
+    
+    PhotonView m_PhotonView;
+
     void Start()
     {
         _leftArm = GameObject.Find("Bone_LeftArm");
@@ -24,11 +30,22 @@ public class PlayerScript : MonoBehaviour
         _mainAnim = GameObject.Find("Bone_Body").GetComponent<Animator>();
         _leftArmAnim = _leftArm.GetComponent<Animator>();
         _rightArmAnim = _rightArm.GetComponent<Animator>();
+        
+        m_PhotonView = GetComponent<PhotonView>();
+        
+        if (!m_PhotonView.isMine)
+            return;
+        
+        camera = GameObject.Find("Main Camera").GetComponent<Camera>();
+        cameraTransform = camera.transform;
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (!m_PhotonView.isMine)
+            return;
+        
         if (Input.GetMouseButtonDown(1))
         {
             _leftArmAnim.SetTrigger("LeftAttack");
@@ -47,7 +64,7 @@ public class PlayerScript : MonoBehaviour
         }
         if (Input.GetKey("a"))
         {
-            xVel -= playerXSpd * 0.7f;
+            xVel -= playerXSpd;
         }
         if (Input.GetKey("w"))
         {
@@ -58,23 +75,43 @@ public class PlayerScript : MonoBehaviour
             yVel -= playerYSpd;
         }
 
+        if ((transform.localScale.x > 0 && xVel < 0) || (transform.localScale.x < 0 && xVel > 0))
+        {
+            xVel *= 0.7f;
+        }
+
         playerVel = new Vector2(xVel, yVel); 
         transform.Translate(playerVel * Time.deltaTime);
         _mainAnim.SetFloat("moveMagnitude", playerVel.magnitude);
         _mainAnim.SetFloat("moveXVel", xVel);
 
-        /*if (_mainAnim.GetCurrentAnimatorStateInfo(0).IsName("Run"))
+        Vector3 mousePos = Input.mousePosition;
+
+        if (_leftArmAnim.GetCurrentAnimatorStateInfo(0).IsName("Idle_LeftArm")
+            && _rightArmAnim.GetCurrentAnimatorStateInfo(0).IsName("Idle_RightArm"))
         {
-            if (xVel < 0)
+            if (mousePos.x > camera.WorldToScreenPoint(transform.position).x)
             {
-                _mainAnim.Play("BackRun");
+                transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
             }
-        }else if (_mainAnim.GetCurrentAnimatorStateInfo(0).IsName("BackRun"))
-        {
-            if (xVel > 0)
+            else
             {
-                _mainAnim.Play("Run");
+                transform.localScale = new Vector3(-1.0f, 1.0f, 1.0f);
             }
-        }*/
+        }
+    }
+    
+    private void LateUpdate()
+    {
+        if (!m_PhotonView.isMine)
+            return;
+        
+        SmoothFollow();
+    }
+    public void SmoothFollow()
+    {
+        Vector3 targetPos = transform.position + offset;
+        Vector3 smoothFollow = Vector3.Lerp(cameraTransform.position, targetPos, smoothSpeed);
+        cameraTransform.position = smoothFollow;
     }
 }
