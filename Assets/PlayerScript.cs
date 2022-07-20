@@ -1,3 +1,4 @@
+using Photon.Pun;
 using UnityEngine;
 
 public class PlayerScript : MonoBehaviour
@@ -8,34 +9,28 @@ public class PlayerScript : MonoBehaviour
     public float smoothSpeed = 0.1f;
     
     
-    private Animator _mainAnim;
-    private Animator _leftArmAnim;
-    private Animator _rightArmAnim;
+    public Animator mainAnim;
+    public Animator leftArmAnim;
+    public Animator rightArmAnim;
 
-    private GameObject _leftArm;
-    private GameObject _rightArm;
+    public GameObject leftArm;
+    public GameObject rightArm;
     // Start is called before the first frame update
 
     private float playerXSpd = 5.0f;
     private float playerYSpd = 2.5f;
     private Vector2 playerVel = Vector2.zero;
 
-    
-    PhotonView m_PhotonView;
+    private PhotonView _photonView;
 
+    
     void Start()
     {
-        _leftArm = GameObject.Find("Bone_LeftArm");
-        _rightArm = GameObject.Find("Bone_RightArm");
-        _mainAnim = GameObject.Find("Bone_Body").GetComponent<Animator>();
-        _leftArmAnim = _leftArm.GetComponent<Animator>();
-        _rightArmAnim = _rightArm.GetComponent<Animator>();
-        
-        m_PhotonView = GetComponent<PhotonView>();
-        
-        if (!m_PhotonView.isMine)
+        _photonView = GetComponent<PhotonView>();
+
+        if(!_photonView.IsMine)
             return;
-        
+
         camera = GameObject.Find("Main Camera").GetComponent<Camera>();
         cameraTransform = camera.transform;
     }
@@ -43,16 +38,16 @@ public class PlayerScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!m_PhotonView.isMine)
+        if(!_photonView.IsMine)
             return;
         
         if (Input.GetMouseButtonDown(1))
         {
-            _leftArmAnim.SetTrigger("LeftAttack");
+            leftArmAnim.SetTrigger("LeftAttack");
         }
         if (Input.GetMouseButtonDown(0))
         {
-            _rightArmAnim.SetTrigger("RightAttack");
+            rightArmAnim.SetTrigger("RightAttack");
         }
         
         float xVel = 0.0f;
@@ -82,13 +77,13 @@ public class PlayerScript : MonoBehaviour
 
         playerVel = new Vector2(xVel, yVel); 
         transform.Translate(playerVel * Time.deltaTime);
-        _mainAnim.SetFloat("moveMagnitude", playerVel.magnitude);
-        _mainAnim.SetFloat("moveXVel", xVel);
+        mainAnim.SetFloat("moveMagnitude", playerVel.magnitude);
+        mainAnim.SetFloat("moveXVel", xVel);
 
         Vector3 mousePos = Input.mousePosition;
 
-        if (_leftArmAnim.GetCurrentAnimatorStateInfo(0).IsName("Idle_LeftArm")
-            && _rightArmAnim.GetCurrentAnimatorStateInfo(0).IsName("Idle_RightArm"))
+        if (leftArmAnim.GetCurrentAnimatorStateInfo(0).IsName("Idle_LeftArm")
+            && rightArmAnim.GetCurrentAnimatorStateInfo(0).IsName("Idle_RightArm"))
         {
             if (mousePos.x > camera.WorldToScreenPoint(transform.position).x)
             {
@@ -103,9 +98,9 @@ public class PlayerScript : MonoBehaviour
     
     private void LateUpdate()
     {
-        if (!m_PhotonView.isMine)
+        if (!_photonView.IsMine)
             return;
-        
+
         SmoothFollow();
     }
     public void SmoothFollow()
